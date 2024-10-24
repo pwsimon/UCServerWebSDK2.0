@@ -1,0 +1,9 @@
+{
+  "name": "estos-entraid",
+  "version": "1.0.0",
+  "description": "estos EntraId support",
+  "module": "index.js",
+  "sideEffects": false,
+  "author": "Peter Simon",
+  "license": "ISC"
+}
