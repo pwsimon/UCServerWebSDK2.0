@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<title>Test_EntraId</title>
+	<meta charset="utf-8" />
+	<!-- YOUR SKETCH -->
+	<link rel="Stylesheet" href="./src/style.css" />
+	<script type="module" src="/src/index.ts"></script>
+</head>
+
+<body>
+	<h3>very first Page of Sign-In Wizard</h3>
+	<p>
+		wir holen einen <a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#send-the-sign-in-request">nonce</a> vom UCServer und Navigieren zur LoginProvider-SignIn-Page.<br>
+		Die LoginProvider-SignIn-Page redirected anschliessend zur <i>RedirectUri</i>.<br>
+		see also: <a href="https://wiki.estos.de/pages/viewpage.action?spaceKey=EUCAAS&title=Entra+ID+Integration">Entra ID Integration</a> |
+		<a href="https://wiki.estos.de/pages/viewpage.action?pageId=1013219525">Login process/wizard</a>
+	</p>
+	<!--
+		die fuer ein "automatic" login relevante <UCSID> steht im localStorage
+		das login besteht aus zwei losgeloesten schritten
+		1.) ermitteln einer gueltigen UCSID incl. deren persistence
+		wir brauchen hier analog zu 2.) eine Seite mit recently-used: <UCSID's>
+		SignOut => nur Account wechsel
+		Select UCSID => neue/andere UCSID (fuehrt automatisch zu SignOut)
+		2.) ermitteln von Account/Credentials incl. deren persistence
+		die vom OpenID-Provider bereitgestellte Seite erfuellt alle wuensche
+		Dieser Input wird auf ein enthaltenes @ geprueft und fuehrt entsprechend 2 Methoden aus:
+	-->
+	<p>
+		UserId: <input id="edtUserId" />&nbsp;<button id="btnCreateUrlAuthorize" disabled>Next</button>
+	</p>
+	<div class="env">
+		<p>
+			Folgende berechtigungen sind fuer environment: <i>WebView</i> UseCases/Demo noetig:<br />
+			<code>
+				&lt;Scope&gt;/asnWebRequest&lt;/Scope&gt;
+			</code>
+		</p>
+		<p>
+			Folgende berechtigungen sind fuer environment: <i>standalone</i> UseCases/Demo noetig:<br />
+			<code>
+				-- keine --;
+			</code>
+		</p>
+		<!--
+			psiestosde.onmicrosoft.com
+			ClientId: 74568e13-166b-4c43-a88d-47e9888c79d5 (SDKEntraId)
+			TenantId: 194aa48f-406c-4dfc-b7d3-7819b7f3ff53
+			Das parsen der: TenantId aus dem vom UCServer generierten LoginUrl ist natuerlich suboptimal
+			Besser dediziert/separat bereitstellen!
+		-->
+		<p>
+			TenantId: <input id="lblTenantId" />&nbsp;<button id="btnAuthorityURL">AuthorityURL</button>
+		</p>
+		<form action="https://login.microsoftonline.com/194aa48f-406c-4dfc-b7d3-7819b7f3ff53/oauth2/v2.0/authorize" method="get">
+			<input type="hidden" name="client_id" value="74568e13-166b-4c43-a88d-47e9888c79d5">
+			<input type="hidden" name="response_type" value="id_token">
+			<input type="hidden" name="response_mode" value="fragment">
+			<input type="hidden" name="scope" value="openid profile">
+			<input type="hidden" name="nonce" value="random string">
+			<input type="hidden" name="redirect_uri" value="http://localhost/etapisrvsdk/webview2/test_entraidv3/redirect.html">
+			<input type="submit" value="Login@psiestosde.onmicrosoft.com">
+		</form>
+		<a href="https://login.microsoftonline.com/194aa48f-406c-4dfc-b7d3-7819b7f3ff53/oauth2/v2.0/logout">SignOut</a>
+	</div>
+</body>
+
+</html>

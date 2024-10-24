@@ -1,0 +1,14 @@
+{
+  "name": "build-npm-package",
+  "version": "1.0.0",
+  "description": "build the npm package",
+  "main": "index.js",
+  "scripts": {
+    "compile": "tsc"
+  },
+  "author": "Peter Simon",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

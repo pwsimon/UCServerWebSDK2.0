@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<title>Test_EntraId_Redirect</title>
+	<meta charset="utf-8" />
+	<!-- YOUR SKETCH -->
+	<link rel="Stylesheet" href="./src/style.css" />
+	<script type="module" src="/src/redirect.ts"></script>
+</head>
+
+<body>
+	<!--
+		dieser UseCase (handle redirect) kann relativ einfach in jede beliebige seite integriert werden
+		letztlich muss dieser nur eindeutig im OnLoad erkannt/ausgekoppelt werden.
+	-->
+	<h3>Authenticated User: <span id="lblUser"></span></h3>
+	<img id="imgUser" src="" />
+	<!--
+		the following 3 options are the most commonly used cases.
+	-->
+	<p>
+		<b>stay SignedIn</b> by simply close the Tab ...<br>
+		(except explizit deny: KMSI)
+	</p>
+	<p>
+		SignOut/Restart. (Reset: Keep me SignedIn)
+		Restart recently used Account =&gt; Prompt for Password<br>
+		<button type="button" id="btnSignOutRestart">SignOut & Restart</button>
+	</p>
+	<p>
+		SignOut (from the indicated Account).
+		Reset/Clear last recently used Account.
+		Navigate to first page of Login-Wizzard =&gt; prompt for Account.<br>
+		<button type="button" id="btnSelectUCSID">SignOut & Reset</button>
+	</p>
+	<!--
+		CAUTION:
+		do not use account's from the recentlyUsed-list which have a different domain than the current one.
+	-->
+	<p style="background-color: aqua;padding: 10px;">
+		Downgrade/Restart.
+		Pick recently used Account =&gt; Prompt for Password (Use KMSI)<br>
+		(Quick account switching while maintaining the server)<br>
+		<button type="button" id="btnSwitchAccount">Sign-In with other Account</button>
+	</p>
+	<div class="env">
+		<p>
+			SignOut (prompt for Account).
+			Stop with SignOut-Message =&gt; Close Tab manually.<br>
+			<button type="button" id="btnSignOut">SignOut</button>
+		</p>
+
+		<p>
+			fuer eine &quot;optimale&quot; user-expirence mit dem SignOut ist eine entsprechende configuration der App-Registration noetig.
+			<a href="https://learn.microsoft.com/en-us/entra/identity-platform/optional-claims?tabs=appui">Login hint</a>
+		</p>
+		<p>
+			Folgende berechtigungen sind fuer DIESEN UseCases/Demo noetig:<br />
+			<code>
+				-- keine --;
+			</code>
+		</p>
+		<a href="https://jwt.io/">JWT Decoder</a>
+	</div>
+</body>
+
+</html>
