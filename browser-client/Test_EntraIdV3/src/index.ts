@@ -44,10 +44,31 @@ function createUrlAuthorize() {
 			localStorage.removeItem("userid");
 		});
 }
+function createUrlAuthorizeFromAppRegistration() {
+	const sUserId = localStorage.getItem("userid") ?? "";
+	console.assert(0 < sUserId.length, "UserId is Mandatory!");
+	if(0 == sUserId.length) return;
+	fetch("./appRegistration.json")
+		.then(response => response.json())
+		.then(oAppRegistration => {
+			console.log("AppRegistration:", oAppRegistration);
+			const sUrlAuthorize = `https://login.microsoftonline.com/${oAppRegistration.tenantId}/oauth2/v2.0/authorize`;
+			const sResponseType = `?response_type=id_token`;
+			const sResponseMode = `&response_mode=fragment`;
+			const sScope = "&scope=" + encodeURIComponent("openid profile");
+			const sNonce = `&nonce=randomstring`;
+			const sClientId = `&client_id=${oAppRegistration.clientId}`;
+			const sRedirect = "&redirect_uri=" + encodeURIComponent("http://localhost:5173/redirect.html"); //document.location
+			const sLoginHint: string = getUserIdFromUserId(sUserId).length ? "&login_hint=" + getUserIdFromUserId(sUserId) : "";
+			const urlAuthorize = sUrlAuthorize.concat(sResponseType, sResponseMode, sScope, sNonce, sClientId, sRedirect, sLoginHint);
+			console.log("urlAuthorize:", urlAuthorize);
+			window.location.replace(urlAuthorize);
+		})
+}
 
 window.addEventListener("load", () => {
 	const btnCreateUrlAuthorize = document.getElementById("btnCreateUrlAuthorize") as HTMLButtonElement;
-	btnCreateUrlAuthorize.addEventListener("click", () => createUrlAuthorize());
+	btnCreateUrlAuthorize.addEventListener("click", () => createUrlAuthorizeFromAppRegistration());
 
 	const btnAuthorityURL = document.getElementById("btnAuthorityURL") as HTMLButtonElement;
 	const lblTenantId = document.getElementById("lblTenantId") as HTMLInputElement;
@@ -65,6 +86,20 @@ window.addEventListener("load", () => {
 		discoverUCSID(sUCSID)
 			.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
 			.then(sUrlAuthorize => {
+				/*
+				* der vom UCServer bereitgestellte: sUrlAuthorize ist in mehrfacher hinsicht (sch...)
+				* Es wird davon ausgegangen das die App-Registration (general.xml, EntraId-Section im UCServer) sowohl fuer das
+				* a.) replizieren der benutzer (Anwendung, UCServer UserManager) als auch 
+				* b.) die Login-App (Delegated) ist.
+				*
+				* Wir trennen das sauber:
+				* die: general.xml, EntraId-Section im UCServer dient ausschliesslich dem: replizieren der benutzer (Anwendung, UCServer UserManager)
+				* dieses Sample hat, wie auch jede kundenanwendung, seine App-Registration. e.g. (./appRegistration.json)
+				*
+				* Begruendung:
+				* jede App-Registration hat nur die Berechtigungen die fuer seinen UseCase noetig sind
+				* siehe: createUrlAuthorizeFromAppRegistration()
+				*/
 				console.log("try:", sUCSID, "SUCCEEDED");
 				localStorage.setItem("userid", sUserId);
 
