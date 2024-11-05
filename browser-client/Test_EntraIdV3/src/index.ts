@@ -14,6 +14,43 @@ import {
 config.sControllerUrl = "https://devuccontroller.ucconnect.de";
 
 function createUrlAuthorize() {
+	const sUserId = localStorage.getItem("userid") ?? "";
+	console.assert(0 < sUserId.length, "UserId is Mandatory!");
+	const sUCSID = getUCSIDFromUserId(sUserId);
+	if(0 == sUserId.length) return;
+
+	/*
+	* wird ZWEIMAL refenziert!
+	* 1.) try automatic login ... und 2.) explixit/manual login
+	* wir muessen immer die gleiche config (TenantId/ClientId) verwenden.
+	*/
+	let sNonceParam = "";
+	discoverUCSID(sUCSID)
+		.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
+		.then(sUrlAuthorizeOrg => {
+			console.log("sUrlAuthorizeOrg:", sUrlAuthorizeOrg);
+			const urlAuthorize = new URL(sUrlAuthorizeOrg);
+			sNonceParam = urlAuthorize.searchParams.get("nonce") ?? ""; // parse: nonce from: sUrlAuthorizeOrg
+			return Promise.resolve(urlAuthorize); // App-Registration from UCServer
+			return getUrlAuthorizeFromAppRegistration(); // App-Registration from config
+		})
+		.then(urlAuthorizeOrg => {
+			urlAuthorizeOrg.searchParams.append("redirect_uri", "http://localhost:5173/redirect.html"); //document.location
+			if (getUserIdFromUserId(sUserId).length)
+				urlAuthorizeOrg.searchParams.append("login_hint", getUserIdFromUserId(sUserId));
+			if (!urlAuthorizeOrg.searchParams.has("nonce") && sNonceParam.length)
+				urlAuthorizeOrg.searchParams.append("nonce", sNonceParam);
+			console.assert(urlAuthorizeOrg.searchParams.has("nonce"), "nonce is required!");
+			console.log("urlAuthorize:", urlAuthorizeOrg.href);
+			window.location.replace(urlAuthorizeOrg);
+		})
+		.catch(_e => {
+			// console.log("exception caught:", e);
+			console.log("discover:", sUCSID, "FAILED");
+			localStorage.removeItem("userid");
+		});
+}
+function getUrlAuthorizeFromUCServer(sUCSID: string): Promise<URL> {
 /*
 * fuehrt via. GET /ws/client/createsession
 * zu EAuthManagerIssuerEntraId::GenerateNonce()
@@ -24,51 +61,34 @@ function createUrlAuthorize() {
 * An dieser stelle: redirect.html/js beginnt dann das drama bzw. die herausforderung
 * die UCSID wieder-her-zu-stellen/neu-zu-ermitteln denn die ist ja, durch das unload, verloren
 */
-	const sUserId = localStorage.getItem("userid") ?? "";
-	console.assert(0 < sUserId.length, "UserId is Mandatory!");
-	const sUCSID = getUCSIDFromUserId(sUserId);
-	if(0 == sUserId.length) return;
-	discoverUCSID(sUCSID)
-		.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
-		.then(sUrlAuthorize => {
-			// console.log("sUrlAuthorize:", sUrlAuthorize);
-			const sRedirect = "&redirect_uri=" + encodeURIComponent("http://localhost:5173/redirect.html"); //document.location
-			const sLoginHint: string = getUserIdFromUserId(sUserId).length ? "&login_hint=" + getUserIdFromUserId(sUserId) : "";
-			const urlAuthorize = sUrlAuthorize.concat(sRedirect, sLoginHint);
-			console.log("urlAuthorize:", urlAuthorize);
-			window.location.replace(urlAuthorize);
-		})
-		.catch(_e => {
-			// console.log("exception caught:", e);
-			console.log("discover:", sUCSID, "FAILED");
-			localStorage.removeItem("userid");
+	return new Promise((resolve, _reject) => {
+		discoverUCSID(sUCSID)
+			.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
+			.then(sUrlAuthorizeOrg => resolve(new URL(sUrlAuthorizeOrg)));
 		});
 }
-function createUrlAuthorizeFromAppRegistration() {
-	const sUserId = localStorage.getItem("userid") ?? "";
-	console.assert(0 < sUserId.length, "UserId is Mandatory!");
-	if(0 == sUserId.length) return;
-	fetch("./appRegistration.json")
-		.then(response => response.json())
-		.then(oAppRegistration => {
-			console.log("AppRegistration:", oAppRegistration);
-			const sUrlAuthorize = `https://login.microsoftonline.com/${oAppRegistration.tenantId}/oauth2/v2.0/authorize`;
-			const sResponseType = `?response_type=id_token`;
-			const sResponseMode = `&response_mode=fragment`;
-			const sScope = "&scope=" + encodeURIComponent("openid profile");
-			const sNonce = `&nonce=randomstring`;
-			const sClientId = `&client_id=${oAppRegistration.clientId}`;
-			const sRedirect = "&redirect_uri=" + encodeURIComponent("http://localhost:5173/redirect.html"); //document.location
-			const sLoginHint: string = getUserIdFromUserId(sUserId).length ? "&login_hint=" + getUserIdFromUserId(sUserId) : "";
-			const urlAuthorize = sUrlAuthorize.concat(sResponseType, sResponseMode, sScope, sNonce, sClientId, sRedirect, sLoginHint);
-			console.log("urlAuthorize:", urlAuthorize);
-			window.location.replace(urlAuthorize);
+function getUrlAuthorizeFromAppRegistration(): Promise<URL> {
+	return new Promise((resolve, _reject) => {
+		fetch("./appRegistration.json")
+			.then(response => response.json())
+			.then(oAppRegistration => {
+				console.log("AppRegistration:", oAppRegistration);
+				const urlAuthorize = new URL(`https://login.microsoftonline.com/${oAppRegistration.tenantId}/oauth2/v2.0/authorize`);
+				urlAuthorize.searchParams.append("response_type","id_token");
+				urlAuthorize.searchParams.append("response_mode", "fragment");
+				urlAuthorize.searchParams.append("scope", "openid profile");
+				// der: "nonce" MUSS vom UCServer kommen. Der wird mit dem asnLogon() geprueft ...
+				// urlAuthorize.searchParams.append("nonce", "randomstring");
+				// die: "client_id" MUSS vom UCServer kommen. Die wird mit dem asnLogon() geprueft ...
+				urlAuthorize.searchParams.append("client_id", oAppRegistration.clientId);
+				resolve(urlAuthorize);
 		})
+	});
 }
 
 window.addEventListener("load", () => {
 	const btnCreateUrlAuthorize = document.getElementById("btnCreateUrlAuthorize") as HTMLButtonElement;
-	btnCreateUrlAuthorize.addEventListener("click", () => createUrlAuthorizeFromAppRegistration());
+	btnCreateUrlAuthorize.addEventListener("click", () => createUrlAuthorize());
 
 	const btnAuthorityURL = document.getElementById("btnAuthorityURL") as HTMLButtonElement;
 	const lblTenantId = document.getElementById("lblTenantId") as HTMLInputElement;
@@ -86,6 +106,8 @@ window.addEventListener("load", () => {
 		discoverUCSID(sUCSID)
 			.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
 			.then(sUrlAuthorize => {
+				btnCreateUrlAuthorize.disabled = false;
+
 				/*
 				* der vom UCServer bereitgestellte: sUrlAuthorize ist in mehrfacher hinsicht (sch...)
 				* Es wird davon ausgegangen das die App-Registration (general.xml, EntraId-Section im UCServer) sowohl fuer das
@@ -101,11 +123,17 @@ window.addEventListener("load", () => {
 				* siehe: createUrlAuthorizeFromAppRegistration()
 				*/
 				console.log("try:", sUCSID, "SUCCEEDED");
-				localStorage.setItem("userid", sUserId);
+
+				/*
+				* zu diesem Zeitpunkt, nach dem erfolgreichen discoverUCSID(), ist nur der DomainAnteil die UCSID/Alias garantiert.
+				* Die vollstaendige <UserId> speichern wir erst mit einem erfolgreichen Login. siehe: redirect.html
+				*/
+				localStorage.setItem("userid", sUCSID);
 
 				let urlAuthorize = new URL(sUrlAuthorize);
-				btnCreateUrlAuthorize.disabled = false;
 				lblTenantId.value = urlAuthorize.pathname.substring(1, 37); // parse: tenant from: sUrlAuthorize
+
+				console.log("nonce", urlAuthorize.searchParams.get("nonce"));
 			})
 			.catch(_e => {
 				// console.log("exception caught:", e);
@@ -151,6 +179,6 @@ window.addEventListener("load", () => {
 		if(0 == sUserId.length) return;
 
 		console.log("run as Standalone App:", sUCSID);
-		createUrlAuthorize(); // try automatic login
+		createUrlAuthorize(); // try automatic login ...
 	}
 });

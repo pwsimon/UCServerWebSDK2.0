@@ -73,7 +73,10 @@ function iNetTokenVerify(sToken: string, sUCSID: string) {
 		.then(response => response.json())
 		.then(oSession => {
 			const lblUser = document.getElementById("lblUser") as HTMLInputElement;
-			lblUser.textContent = oSession.ownContact.asnRemoteContact.u8sCtiServerUserName;
+			if (oSession.error)
+				lblUser.textContent = oSession.error.u8sErrorString;
+			else
+				lblUser.textContent = oSession.ownContact.asnRemoteContact.u8sCtiServerUserName;
 			if (oSession.ownContact.asnRemoteContact.optionalParams.jpegPhoto)
 				(document.getElementById("imgUser") as HTMLImageElement).src = `data:image/jpeg;base64,${oSession.ownContact.asnRemoteContact.optionalParams.jpegPhoto.binarydata}`;
 
@@ -246,6 +249,7 @@ window.addEventListener("load", (_event) => {
 		decoded = jwtDecode<JwtPayload>(sToken) as any;
 
 	console.assert(decoded.login_hint, "configure App-Registartion for: logout_hint");
+	console.assert("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud, "only a single distinct client_id is enabled");
 
 	const sUserId = decoded.preferred_username as string,
 		sUCSID = getUCSIDFromUserId(sUserId);
