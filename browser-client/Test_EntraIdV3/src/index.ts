@@ -23,47 +23,46 @@ function createUrlAuthorize() {
 	* wird ZWEIMAL refenziert!
 	* 1.) try automatic login ... und 2.) explixit/manual login
 	* wir muessen immer die gleiche config (TenantId/ClientId) verwenden.
+	*
+	* discoverEntraId() fuehrt via. GET /ws/client/createsession
+	* zu EAuthManagerIssuerEntraId::GenerateNonce()
+		console.log("createUrlAuthorize()");
 	*/
 	let sNonceParam = "";
 	discoverUCSID(sUCSID)
 		.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
-		.then(urlAuthorize => {
-			console.log("urlAuthorize:", urlAuthorize.href);
-			sNonceParam = urlAuthorize.searchParams.get("nonce") ?? ""; // parse: nonce from: sUrlAuthorizeOrg
-			return Promise.resolve(urlAuthorize); // App-Registration from UCServer
-			return getUrlAuthorizeFromAppRegistration(); // App-Registration from config
+		.then(urlAuthorizeOrg => {
+			console.log("urlAuthorizeOrg:", urlAuthorizeOrg.href);
+			sNonceParam = urlAuthorizeOrg.searchParams.get("nonce") ?? ""; // parse: nonce from: sUrlAuthorizeOrg
+			return Promise.resolve(urlAuthorizeOrg); // App-Registration from UCServer
+			// App-Registration from config, alternative App-Registration KEIN asnLogon() am UCServer moeglich!
+			return getUrlAuthorizeFromAppRegistration();
 		})
 		.then(urlAuthorizeOrg => {
 			urlAuthorizeOrg.searchParams.append("redirect_uri", "http://localhost:5173/redirect.html"); //document.location
+			/*
+			* mit dem anfuegen des: redirect_uri ist der: urlAuthorizeOrg komplett!
+			* wir haben alles fuer einen start des OpenId-Provider LoginWizard & einem asnLogon() am UCServer.
+			*/
+
 			if (getUserIdFromUserId(sUserId).length)
 				urlAuthorizeOrg.searchParams.append("login_hint", getUserIdFromUserId(sUserId));
 			if (!urlAuthorizeOrg.searchParams.has("nonce") && sNonceParam.length)
 				urlAuthorizeOrg.searchParams.append("nonce", sNonceParam);
 			console.assert(urlAuthorizeOrg.searchParams.has("nonce"), "nonce is required!");
-			console.log("urlAuthorize:", urlAuthorizeOrg.href);
+			console.log("urlAuthorizeOrg:", urlAuthorizeOrg.href);
+			/*
+			* mit dem erfolgreichen: discoverEntraId() endet die lebensdauer dieser seite -> OnUnLoad
+			* es wird mit: redirect.html fortgesetzt ...
+			* An dieser stelle: redirect.html/js beginnt dann das drama bzw. die herausforderung
+			* die UCSID wieder-her-zu-stellen/neu-zu-ermitteln denn die ist ja, durch das unload, verloren
+			*/
 			window.location.replace(urlAuthorizeOrg);
 		})
 		.catch(_e => {
 			// console.log("exception caught:", e);
 			console.log("discover:", sUCSID, "FAILED");
 			localStorage.removeItem("userid");
-		});
-}
-function getUrlAuthorizeFromUCServer(sUCSID: string): Promise<URL> {
-/*
-* fuehrt via. GET /ws/client/createsession
-* zu EAuthManagerIssuerEntraId::GenerateNonce()
-	console.log("createUrlAuthorize()");
-*
-* mit dem erfolgreichen: discoverEntraId() endet die lebensdauer dieser seite -> OnUnLoad
-* es wird mit: redirect.html fortgesetzt ...
-* An dieser stelle: redirect.html/js beginnt dann das drama bzw. die herausforderung
-* die UCSID wieder-her-zu-stellen/neu-zu-ermitteln denn die ist ja, durch das unload, verloren
-*/
-	return new Promise((resolve, _reject) => {
-		discoverUCSID(sUCSID)
-			.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
-			.then(urlAuthorizeOrg => resolve(urlAuthorizeOrg));
 		});
 }
 function getUrlAuthorizeFromAppRegistration(): Promise<URL> {
