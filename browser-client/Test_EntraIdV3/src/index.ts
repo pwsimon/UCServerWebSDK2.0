@@ -27,9 +27,8 @@ function createUrlAuthorize() {
 	let sNonceParam = "";
 	discoverUCSID(sUCSID)
 		.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
-		.then(sUrlAuthorizeOrg => {
-			console.log("sUrlAuthorizeOrg:", sUrlAuthorizeOrg);
-			const urlAuthorize = new URL(sUrlAuthorizeOrg);
+		.then(urlAuthorize => {
+			console.log("urlAuthorize:", urlAuthorize.href);
 			sNonceParam = urlAuthorize.searchParams.get("nonce") ?? ""; // parse: nonce from: sUrlAuthorizeOrg
 			return Promise.resolve(urlAuthorize); // App-Registration from UCServer
 			return getUrlAuthorizeFromAppRegistration(); // App-Registration from config
@@ -64,7 +63,7 @@ function getUrlAuthorizeFromUCServer(sUCSID: string): Promise<URL> {
 	return new Promise((resolve, _reject) => {
 		discoverUCSID(sUCSID)
 			.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
-			.then(sUrlAuthorizeOrg => resolve(new URL(sUrlAuthorizeOrg)));
+			.then(urlAuthorizeOrg => resolve(urlAuthorizeOrg));
 		});
 }
 function getUrlAuthorizeFromAppRegistration(): Promise<URL> {
@@ -105,11 +104,11 @@ window.addEventListener("load", () => {
 		if(0 == sUserId.length) return;
 		discoverUCSID(sUCSID)
 			.then(sOrigin => discoverEntraId(sOrigin, sUCSID))
-			.then(sUrlAuthorize => {
+			.then(urlAuthorize => {
 				btnCreateUrlAuthorize.disabled = false;
 
 				/*
-				* der vom UCServer bereitgestellte: sUrlAuthorize ist in mehrfacher hinsicht (sch...)
+				* der vom UCServer bereitgestellte: urlAuthorize ist in mehrfacher hinsicht (sch...)
 				* Es wird davon ausgegangen das die App-Registration (general.xml, EntraId-Section im UCServer) sowohl fuer das
 				* a.) replizieren der benutzer (Anwendung, UCServer UserManager) als auch 
 				* b.) die Login-App (Delegated) ist.
@@ -130,7 +129,6 @@ window.addEventListener("load", () => {
 				*/
 				localStorage.setItem("userid", sUCSID);
 
-				let urlAuthorize = new URL(sUrlAuthorize);
 				lblTenantId.value = urlAuthorize.pathname.substring(1, 37); // parse: tenant from: sUrlAuthorize
 
 				console.log("nonce", urlAuthorize.searchParams.get("nonce"));

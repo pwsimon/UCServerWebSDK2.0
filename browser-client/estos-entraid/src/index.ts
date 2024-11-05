@@ -46,7 +46,7 @@ export async function discoverUCSID(sUCSID: string) {
 		})
 		.then(data => data.redirect);
 }
-export async function discoverEntraId(sOrigin: string, sUCSID: string) {
+export async function discoverEntraId(sOrigin: string, sUCSID: string): Promise<URL> {
 /*
 * mit diesem, zweiten, discover ermitteln wir ob unser UCServer fuer EntraId konfiguriert ist
 * general.xml, Settings/UserManager/UserReplicator
@@ -54,7 +54,7 @@ export async function discoverEntraId(sOrigin: string, sUCSID: string) {
 /*
 * queryParameter: (format=json)
 * sorgt dafuer das wir einen JSON Result bekommen.
-* ohne bekommen wir einen UNBRAUCHBAREN 302.
+* ohne bekommen wir einen UNBRAUCHBAREN [302](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302).
 	console.log("sOrigin:", sOrigin);
 */
 	const urlCreateSession = `${sOrigin}/ws/client/createsession?format=json`;
@@ -67,7 +67,7 @@ export async function discoverEntraId(sOrigin: string, sUCSID: string) {
 		};
 	return fetch(urlCreateSession, oInit)
 		.then(response => response.json())
-		.then(data => data.redirect);
+		.then(data => new URL(data.redirect));
 }
 export async function discoverHost() {
 /*
