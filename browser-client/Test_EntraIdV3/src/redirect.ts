@@ -249,7 +249,6 @@ window.addEventListener("load", (_event) => {
 		decoded = jwtDecode<JwtPayload>(sToken) as any;
 
 	console.assert(decoded.login_hint, "configure App-Registartion for: logout_hint");
-	console.assert("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud, "only a single distinct client_id is enabled");
 
 	const sUserId = decoded.preferred_username as string,
 		sUCSID = getUCSIDFromUserId(sUserId);
@@ -304,36 +303,56 @@ window.addEventListener("load", (_event) => {
 
 	console.log("Token (iss:login.microsoftonline.com)", sToken);
 	console.log("Token (iss:login.microsoftonline.com)", decoded);
-	if((window as any).chrome.webview) {
+
+	/*
+	* hier fragen wir: ist es nicht klueger eine ZWEITE Demo (Test_SSO) zu bauen?
+	* die ist dann unabhaengig von der verwendung des id_token mit einer speziellen UCServer-Instance!
+	* u.A. einer speziellen App-Registration, einem UCServer, NONCE, id_token validation und und und
+	*/
+	console.assert("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud, "only a single distinct client_id is enabled");
+	if ("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud) {
 		/*
-		* das funktioniert (window.chrome.webview) natuerlich NUR in einem ProCall WebViewHost
-		* ToDo: (psi)
-		* einen handler fuer PostMessage im CWebViewHost der
-		* - den connect (sOrigin) macht
-		* - das asnLogon (sToken) mit: AsnAuthenticationChoice::openidcCid macht
-		* Hinweis:
-		* mit dem Login werden aktuell/letztlich ALLE WebTabs destroy'ed und neu erzeugt ...
-		* ob wir einen WebTab (App) brauchen die das Login "ueberlebt" muessen wir herausfinden
+		* ich kann *beliebige/mehrere* App-Registrations im Portal anlegen. ABER
+		* Es kann aktuell nur *eine* App-Registration fuer ein UserLogin am UCServer eingetragen werden.
+		* siehe: (general.xml, SETTINGS/EntraId/ClientId)
+		* Fazit:
+		* eine verification des: id_token am Service MUSS die ClientId umfassen!
+		* ein erfolgreiches Login am UCServer mit der <sUCSID> ist nur mit einem Token/Claim
 		*/
-		console.log("run as WebView2 App:", sUCSID);
-		iNetLoginIdToken(sToken, sUCSID);
-		/*
-		* muss auch nach: estos-slave-tab bzw. in das npm Module
-		const oHostLogin = {
-				sUCController: EXPO_PUBLIC_CONTROLLER_URL,
-				sUCSID: EXPO_PUBLIC_UCSID,
-				sToken
-			},
-			oFrame = {
-					sRequestID: "1.0.0.R43", // legacy "invokeID"
-					operationName: "/loginApp/login", // estos\etapimonitor\LoginAPIHandler.cpp(4)
-					argument: oHostLogin
-				};
-		(window as any).chrome.webview.postMessage(oFrame);
-		*/
+		if ((window as any).chrome.webview) {
+			/*
+			* das funktioniert (window.chrome.webview) natuerlich NUR in einem ProCall WebViewHost
+			* ToDo: (psi)
+			* einen handler fuer PostMessage im CWebViewHost der
+			* - den connect (sOrigin) macht
+			* - das asnLogon (sToken) mit: AsnAuthenticationChoice::openidcCid macht
+			* Hinweis:
+			* mit dem Login werden aktuell/letztlich ALLE WebTabs destroy'ed und neu erzeugt ...
+			* ob wir einen WebTab (App) brauchen die das Login "ueberlebt" muessen wir herausfinden
+			*/
+			console.log("run as WebView2 App:", sUCSID);
+			iNetLoginIdToken(sToken, sUCSID);
+			/*
+			* muss auch nach: estos-slave-tab bzw. in das npm Module
+			const oHostLogin = {
+					sUCController: EXPO_PUBLIC_CONTROLLER_URL,
+					sUCSID: EXPO_PUBLIC_UCSID,
+					sToken
+				},
+				oFrame = {
+						sRequestID: "1.0.0.R43", // legacy "invokeID"
+						operationName: "/loginApp/login", // estos\etapimonitor\LoginAPIHandler.cpp(4)
+						argument: oHostLogin
+					};
+			(window as any).chrome.webview.postMessage(oFrame);
+			*/
+		} else {
+			console.log("run as Standalone App:", sUCSID);
+			iNetTokenVerify(sToken, sUCSID);
+			// iNetLoginIdToken(sToken, sUCSID);
+		}
 	} else {
-		console.log("run as Standalone App:", sUCSID);
-		iNetTokenVerify(sToken, sUCSID);
-		// iNetLoginIdToken(sToken, sUCSID);
+		const lblUser = document.getElementById("lblUser") as HTMLInputElement;
+		lblUser.textContent = decoded.preferred_username;
 	}
 });

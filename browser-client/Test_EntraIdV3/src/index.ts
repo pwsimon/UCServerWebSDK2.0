@@ -1,5 +1,5 @@
 /*
-* damit wir das als componente verpacken (global) und beliebig import(iren) koennen
+* damit wir das als componente verpacken (global) und beliebig import(ieren) koennen
 * muessen wir uns nochmal mit *permisions* auseinandersetzen
 * discoverHost() braucht Scope: "/asnWebRequest"
 */
@@ -7,9 +7,10 @@ import {
 	config,
 	getUCSIDFromUserId,
 	getUserIdFromUserId,
-	discoverHost,
-	discoverUCSID,
-	discoverEntraId } from "estos-entraid";
+	discoverHost, // always against: http://ecticlient.local/
+	discoverUCSID, // requires: config.sControllerUrl
+	discoverEntraId
+} from "estos-entraid";
 // config.sUCSID = "riroyabihi";
 config.sControllerUrl = "https://devuccontroller.ucconnect.de";
 
@@ -34,15 +35,18 @@ function createUrlAuthorize() {
 		.then(urlAuthorizeOrg => {
 			console.log("urlAuthorizeOrg:", urlAuthorizeOrg.href);
 			sNonceParam = urlAuthorizeOrg.searchParams.get("nonce") ?? ""; // parse: nonce from: sUrlAuthorizeOrg
-			return Promise.resolve(urlAuthorizeOrg); // App-Registration from UCServer
+			// return Promise.resolve(urlAuthorizeOrg); // App-Registration from UCServer
 			// App-Registration from config, alternative App-Registration KEIN asnLogon() am UCServer moeglich!
 			return getUrlAuthorizeFromAppRegistration();
 		})
 		.then(urlAuthorizeOrg => {
-			urlAuthorizeOrg.searchParams.append("redirect_uri", "http://localhost:5173/redirect.html"); //document.location
+			// der: urlAuthorizeOrg ruft den OpenId-Provider LoginWizard.
+			urlAuthorizeOrg.searchParams.append("redirect_uri", `${document.location.origin}/redirect.html`);
 			/*
 			* mit dem anfuegen des: redirect_uri ist der: urlAuthorizeOrg komplett!
-			* wir haben alles fuer einen start des OpenId-Provider LoginWizard & einem asnLogon() am UCServer.
+			* wir haben alles fuer einen start des OpenId-Provider LoginWizard.
+			* Ob das redirect.html#id_token=...  fuer ein asnLogon() am UCServer taugt
+			* sehen wir an der ClientId (Claim "aud"). Der muss: (general.xml, SETTINGS/EntraId/ClientId) sein!
 			*/
 
 			if (getUserIdFromUserId(sUserId).length)
