@@ -35,7 +35,7 @@ function createUrlAuthorize() {
 		.then(urlAuthorizeOrg => {
 			console.log("urlAuthorizeOrg:", urlAuthorizeOrg.href);
 			sNonceParam = urlAuthorizeOrg.searchParams.get("nonce") ?? ""; // parse: nonce from: sUrlAuthorizeOrg
-			// return Promise.resolve(urlAuthorizeOrg); // App-Registration from UCServer
+			return Promise.resolve(urlAuthorizeOrg); // App-Registration from UCServer
 			// App-Registration from config, alternative App-Registration KEIN asnLogon() am UCServer moeglich!
 			return getUrlAuthorizeFromAppRegistration();
 		})
@@ -70,15 +70,27 @@ function createUrlAuthorize() {
 		});
 }
 function getUrlAuthorizeFromAppRegistration(): Promise<URL> {
+	/*
+	* wir haben mehrere appRegistration-xxx.json configs! alle muessen:
+	* - Implizite Genehmigung und Hybridflows ...
+	* - Zugriffs/ID-Token
+	* - redirectUri: http://localhost:5173/redirect.html
+	* Technisch wird hier nur die: Anwendungs-ID (Client) verwendet.
+	* damit wir es nicht so leicht verwechseln schreiben wir den: displayName dazu.
+	* Im ersten schritt untersuchen wir SSO fuer unterschiedliche Anwendungs-ID's am GLEICHEN Mandant/Tenant
+	*/
+	const selClientId = document.getElementById("selClientId") as HTMLSelectElement;
+	const appRegistration = selClientId.value.length ? selClientId.value : "./appRegistration.json";
 	return new Promise((resolve, _reject) => {
-		fetch("./appRegistration.json")
+		fetch(appRegistration)
 			.then(response => response.json())
 			.then(oAppRegistration => {
-				console.log("AppRegistration:", oAppRegistration);
+				// console.log("AppRegistration:", oAppRegistration);
 				const urlAuthorize = new URL(`https://login.microsoftonline.com/${oAppRegistration.tenantId}/oauth2/v2.0/authorize`);
 				urlAuthorize.searchParams.append("response_type","id_token");
 				urlAuthorize.searchParams.append("response_mode", "fragment");
 				urlAuthorize.searchParams.append("scope", "openid profile");
+				urlAuthorize.searchParams.append("nonce", "nonce-created-by-server");
 				// der: "nonce" MUSS vom UCServer kommen. Der wird mit dem asnLogon() geprueft ...
 				// urlAuthorize.searchParams.append("nonce", "randomstring");
 				// die: "client_id" MUSS vom UCServer kommen. Die wird mit dem asnLogon() geprueft ...
@@ -92,12 +104,40 @@ window.addEventListener("load", () => {
 	const btnCreateUrlAuthorize = document.getElementById("btnCreateUrlAuthorize") as HTMLButtonElement;
 	btnCreateUrlAuthorize.addEventListener("click", () => createUrlAuthorize());
 
-	const btnAuthorityURL = document.getElementById("btnAuthorityURL") as HTMLButtonElement;
+	const selClientId = document.getElementById("selClientId") as HTMLSelectElement;
+	// console.log("appRegistration:", selClientId.value);
+	selClientId.addEventListener("change", () => {
+		getUrlAuthorizeFromAppRegistration()
+			.then(urlAuthorizeOrg => {
+				// der: urlAuthorizeOrg ruft den OpenId-Provider LoginWizard.
+				urlAuthorizeOrg.searchParams.append("redirect_uri", `${document.location.origin}/redirect.html`);
+				/*
+				* mit dem anfuegen des: redirect_uri ist der: urlAuthorizeOrg komplett!
+				* wir haben alles fuer einen start des OpenId-Provider LoginWizard.
+				*/
+				console.log("urlAuthorizeOrg:", urlAuthorizeOrg.href);
+				window.location.replace(urlAuthorizeOrg);
+			});
+		});
+	const btnFetchOpenIdConfig = document.getElementById("btnFetchOpenIdConfig") as HTMLButtonElement;
 	const lblTenantId = document.getElementById("lblTenantId") as HTMLInputElement;
-	btnAuthorityURL.addEventListener("click", () => {
+	btnFetchOpenIdConfig.addEventListener("click", () => {
 		const tenant = lblTenantId.value;
 		// [Find your app's OpenID configuration document URI](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#find-your-apps-openid-configuration-document-uri)
 		window.location.replace(`https://login.microsoftonline.com/${tenant}/v2.0/.well-known/openid-configuration`);
+	});
+
+	fetch(selClientId.value)
+		.then(response => response.json())
+		.then(oAppRegistration => {
+			lblTenantId.value = oAppRegistration.tenantId;
+		});
+
+	const btnSignOut = document.getElementById("btnSignOut") as HTMLButtonElement;
+	btnSignOut.addEventListener("click", () => {
+		const tenant = lblTenantId.value;
+		// [Find your app's OpenID configuration document URI](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#find-your-apps-openid-configuration-document-uri)
+		window.location.replace(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/logout`);
 	});
 
 	const edtUserId = document.getElementById("edtUserId") as HTMLInputElement;

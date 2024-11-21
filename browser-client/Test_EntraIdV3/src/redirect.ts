@@ -256,10 +256,10 @@ window.addEventListener("load", (_event) => {
 	/*
 	* wir fuehren ein UNBEDINGTES Upgrade, auf den erfolgreichen, Account aus damit der UseCase:
 	* "simply close the Tab/Browser", mit dem last recently used account, funktioniert!
-	*/
 	console.assert(sUserId.length > 0, "login FAILED!");
 	localStorage.setItem("userid", sUserId); // Upgrade
 	console.log("upgrade <userid> to:", sUserId);
+	*/
 
 	const btnSignOutRestart = document.getElementById("btnSignOutRestart") as HTMLButtonElement;
 	btnSignOutRestart.addEventListener("click", () => {
@@ -305,12 +305,11 @@ window.addEventListener("load", (_event) => {
 	console.log("Token (iss:login.microsoftonline.com)", decoded);
 
 	/*
-	* hier fragen wir: ist es nicht klueger eine ZWEITE Demo (Test_SSO) zu bauen?
-	* die ist dann unabhaengig von der verwendung des id_token mit einer speziellen UCServer-Instance!
-	* u.A. einer speziellen App-Registration, einem UCServer, NONCE, id_token validation und und und
+	* der trigger fuer den Login-Process ist durch: appRegistration-xxx.json vollstaendig configurierbar
+	* das finish (redirect) sollte das auch sein ...
 	*/
 	console.assert("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud, "only a single distinct client_id is enabled");
-	if ("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud) {
+	if ("<hier kann nur die estos LoginApp (ClientId) stehen>" === decoded.aud) {
 		/*
 		* ich kann *beliebige/mehrere* App-Registrations im Portal anlegen. ABER
 		* Es kann aktuell nur *eine* App-Registration fuer ein UserLogin am UCServer eingetragen werden.

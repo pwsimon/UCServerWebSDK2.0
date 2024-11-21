@@ -44,26 +44,19 @@
 				-- keine --;
 			</code>
 		</p>
+		<select id="selClientId">
+			<option value="./appRegistration-LoginAppSSO.json">LoginAppSSO</option>
+			<option value="./appRegistration-PROCALL5283.json" selected>PROCALL5283</option>
+		</select>
 		<!--
-			psiestosde.onmicrosoft.com
-			ClientId: 74568e13-166b-4c43-a88d-47e9888c79d5 (SDKEntraId)
-			TenantId: 194aa48f-406c-4dfc-b7d3-7819b7f3ff53
 			Das parsen der: TenantId aus dem vom UCServer generierten LoginUrl ist natuerlich suboptimal
 			Besser dediziert/separat bereitstellen!
 		-->
 		<p>
-			TenantId: <input id="lblTenantId" />&nbsp;<button id="btnAuthorityURL">AuthorityURL</button>
+			TenantId: <input id="lblTenantId" />&nbsp;
+			<button id="btnFetchOpenIdConfig">openid-configuration</button>&nbsp;
+			<button id="btnSignOut">SignOut</button>
 		</p>
-		<form action="https://login.microsoftonline.com/194aa48f-406c-4dfc-b7d3-7819b7f3ff53/oauth2/v2.0/authorize" method="get">
-			<input type="hidden" name="client_id" value="74568e13-166b-4c43-a88d-47e9888c79d5">
-			<input type="hidden" name="response_type" value="id_token">
-			<input type="hidden" name="response_mode" value="fragment">
-			<input type="hidden" name="scope" value="openid profile">
-			<input type="hidden" name="nonce" value="random string">
-			<input type="hidden" name="redirect_uri" value="http://localhost/etapisrvsdk/webview2/test_entraidv3/redirect.html">
-			<input type="submit" value="Login@psiestosde.onmicrosoft.com">
-		</form>
-		<a href="https://login.microsoftonline.com/194aa48f-406c-4dfc-b7d3-7819b7f3ff53/oauth2/v2.0/logout">SignOut</a>
 	</div>
 </body>
 
