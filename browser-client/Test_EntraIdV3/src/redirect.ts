@@ -246,11 +246,12 @@ window.addEventListener("load", (_event) => {
 */
 	const nSessionState = document.location.hash.indexOf("&session_state"),
 		sToken = document.location.hash.substring(10, nSessionState),
-		decoded = jwtDecode<JwtPayload>(sToken) as any;
+		decoded = jwtDecode<JwtPayload>(sToken),
+		anyDecoded = decoded as any;
 
-	console.assert(decoded.login_hint, "configure App-Registartion for: logout_hint");
+	console.assert(anyDecoded.login_hint, "configure App-Registration for: logout_hint");
 
-	const sUserId = decoded.preferred_username as string,
+	const sUserId = anyDecoded.preferred_username as string,
 		sUCSID = getUCSIDFromUserId(sUserId);
 
 	/*
@@ -263,8 +264,8 @@ window.addEventListener("load", (_event) => {
 
 	const btnSignOutRestart = document.getElementById("btnSignOutRestart") as HTMLButtonElement;
 	btnSignOutRestart.addEventListener("click", () => {
-		const sUrlSignOut = `https://login.microsoftonline.com/${decoded.tid}/oauth2/v2.0/logout`;
-		const sLogoutHint: string = decoded.login_hint ? "&logout_hint=" + decoded.login_hint: "";
+		const sUrlSignOut = `https://login.microsoftonline.com/${anyDecoded.tid}/oauth2/v2.0/logout`;
+		const sLogoutHint: string = anyDecoded.login_hint ? "&logout_hint=" + anyDecoded.login_hint: "";
 		const urlSignOut = sUrlSignOut.concat(sRedirect, sLogoutHint);
 		window.location.replace(urlSignOut);
 		// window.open("http://localhost:5173/index.html");
@@ -279,11 +280,11 @@ window.addEventListener("load", (_event) => {
 	const btnSelectUCSID = document.getElementById("btnSelectUCSID") as HTMLButtonElement;
 	btnSelectUCSID.addEventListener("click", () => {
 		localStorage.removeItem("userid");
-		const sUrlSignOut = `https://login.microsoftonline.com/${decoded.tid}/oauth2/v2.0/logout`;
+		const sUrlSignOut = `https://login.microsoftonline.com/${anyDecoded.tid}/oauth2/v2.0/logout`;
 		// to add the: logout_hint enable the: login_hint and use the value from the Token/Claim as parameter
 		// logout_hint (pws@psi...): "O.CiQ3NDg3NjQxMC02YjRmLTQzYmEtYTYwNS1lZGQyMzMxZGM0ZjISJDE5NGFhNDhmLTQwNmMtNGRmYy1iN2QzLTc4MTliN2YzZmY1MxoecHdzQHBzaWVzdG9zZGUub25taWNyb3NvZnQuY29tIFg="
 		// [logout_hint](https://learn.microsoft.com/en-us/entra/identity-platform/optional-claims?tabs=appui)
-		const sLogoutHint: string = decoded.login_hint ? "&logout_hint=" + decoded.login_hint: "";
+		const sLogoutHint: string = anyDecoded.login_hint ? "&logout_hint=" + anyDecoded.login_hint: "";
 		const urlSignOut = sUrlSignOut.concat(sRedirect, sLogoutHint);
 		// console.log("urlSignOut:", urlSignOut);
 		window.location.replace(urlSignOut);
@@ -295,7 +296,7 @@ window.addEventListener("load", (_event) => {
 		* so with open: index.html again an login procces started automaticaly
 		* the user will be propmted for its password (user-interaction)
 		*/
-		const sUrlSignOut = `https://login.microsoftonline.com/${decoded.tid}/oauth2/v2.0/logout`;
+		const sUrlSignOut = `https://login.microsoftonline.com/${anyDecoded.tid}/oauth2/v2.0/logout`;
 		// const urlSignOut = sUrlSignOut.concat(sRedirect);
 		// console.log("sUrlSignOut:", sUrlSignOut);
 		window.location.replace(sUrlSignOut);
@@ -351,7 +352,14 @@ window.addEventListener("load", (_event) => {
 			// iNetLoginIdToken(sToken, sUCSID);
 		}
 	} else {
-		const lblUser = document.getElementById("lblUser") as HTMLInputElement;
-		lblUser.textContent = decoded.preferred_username;
+		// [Type Assertions](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions)
+		const lblUser = document.getElementById("lblUser") as HTMLSpanElement;
+		lblUser.textContent = anyDecoded.preferred_username;
+		const lblClaimAUD = document.getElementById("lblClaimAUD") as HTMLSpanElement;
+		// [Working with Union Types](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#working-with-union-types)
+		if (Array.isArray(decoded.aud))
+			lblClaimAUD.textContent = decoded.aud[0];
+		else if ("string" === typeof decoded.aud)
+			lblClaimAUD.textContent = decoded.aud;
 	}
 });

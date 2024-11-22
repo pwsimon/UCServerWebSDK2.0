@@ -111,6 +111,10 @@ window.addEventListener("load", () => {
 			.then(urlAuthorizeOrg => {
 				// der: urlAuthorizeOrg ruft den OpenId-Provider LoginWizard.
 				urlAuthorizeOrg.searchParams.append("redirect_uri", `${document.location.origin}/redirect.html`);
+				// some optimizations skip pages from Login-Wizard
+				// urlAuthorizeOrg.searchParams.append("domain_hint", getUserIdFromUserId(sUserId));
+				// urlAuthorizeOrg.searchParams.append("login_hint", getUserIdFromUserId(sUserId));
+				// urlAuthorizeOrg.searchParams.append("prompt", "none" | "consent" | "login" | ...);
 				/*
 				* mit dem anfuegen des: redirect_uri ist der: urlAuthorizeOrg komplett!
 				* wir haben alles fuer einen start des OpenId-Provider LoginWizard.
@@ -136,7 +140,6 @@ window.addEventListener("load", () => {
 	const btnSignOut = document.getElementById("btnSignOut") as HTMLButtonElement;
 	btnSignOut.addEventListener("click", () => {
 		const tenant = lblTenantId.value;
-		// [Find your app's OpenID configuration document URI](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#find-your-apps-openid-configuration-document-uri)
 		window.location.replace(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/logout`);
 	});
 
