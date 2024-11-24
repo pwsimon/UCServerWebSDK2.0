@@ -44,8 +44,7 @@ function iNetLoginIdToken(sToken: string, sUCSID: string) {
 		})
 		.then(response => response.json())
 		.then(oSession => {
-			const lblUser = document.getElementById("lblUser") as HTMLInputElement;
-			lblUser.textContent = oSession.ownContact.asnRemoteContact.u8sCtiServerUserName;
+			updateApplication(oSession.ownContact.asnRemoteContact.u8sCtiServerUserName, "164d6c58-e579-4e9f-a0b9-3db321a81621");
 			if (oSession.ownContact.asnRemoteContact.optionalParams.jpegPhoto)
 				(document.getElementById("imgUser") as HTMLImageElement).src = `data:image/jpeg;base64,${oSession.ownContact.asnRemoteContact.optionalParams.jpegPhoto.binarydata}`;
 		});
@@ -73,10 +72,9 @@ function iNetTokenVerify(sToken: string, sUCSID: string) {
 		.then(response => response.json())
 		.then(oSession => {
 			const lblUser = document.getElementById("lblUser") as HTMLInputElement;
-			if (oSession.error)
-				lblUser.textContent = oSession.error.u8sErrorString;
-			else
-				lblUser.textContent = oSession.ownContact.asnRemoteContact.u8sCtiServerUserName;
+			lblUser.textContent = oSession.error ? oSession.error.u8sErrorString :
+				oSession.ownContact.asnRemoteContact.u8sCtiServerUserName;
+			updateApplication(oSession.ownContact.asnRemoteContact.u8sCtiServerUserName, "164d6c58-e579-4e9f-a0b9-3db321a81621");
 			if (oSession.ownContact.asnRemoteContact.optionalParams.jpegPhoto)
 				(document.getElementById("imgUser") as HTMLImageElement).src = `data:image/jpeg;base64,${oSession.ownContact.asnRemoteContact.optionalParams.jpegPhoto.binarydata}`;
 
@@ -111,6 +109,13 @@ function iNetTokenVerify(sToken: string, sUCSID: string) {
 		.catch(e => {
 			console.log("exception caught:", e);
 		});
+}
+function updateApplication(sUser: string, sApplication: string) {
+	// [Type Assertions](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions)
+	const lblUser = document.getElementById("lblUser") as HTMLSpanElement;
+	lblUser.textContent = sUser;
+	const lblClaimAUD = document.getElementById("lblClaimAUD") as HTMLSpanElement;
+	lblClaimAUD.textContent = sApplication;
 }
 
 // helpers/infrastructure
@@ -280,6 +285,7 @@ window.addEventListener("load", (_event) => {
 	const btnSelectUCSID = document.getElementById("btnSelectUCSID") as HTMLButtonElement;
 	btnSelectUCSID.addEventListener("click", () => {
 		localStorage.removeItem("userid");
+		// [Send a sign-out request](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#send-a-sign-out-request)
 		const sUrlSignOut = `https://login.microsoftonline.com/${anyDecoded.tid}/oauth2/v2.0/logout`;
 		// to add the: logout_hint enable the: login_hint and use the value from the Token/Claim as parameter
 		// logout_hint (pws@psi...): "O.CiQ3NDg3NjQxMC02YjRmLTQzYmEtYTYwNS1lZGQyMzMxZGM0ZjISJDE5NGFhNDhmLTQwNmMtNGRmYy1iN2QzLTc4MTliN2YzZmY1MxoecHdzQHBzaWVzdG9zZGUub25taWNyb3NvZnQuY29tIFg="
@@ -310,7 +316,7 @@ window.addEventListener("load", (_event) => {
 	* das finish (redirect) sollte das auch sein ...
 	*/
 	console.assert("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud, "only a single distinct client_id is enabled");
-	if ("<hier kann nur die estos LoginApp (ClientId) stehen>" === decoded.aud) {
+	if ("164d6c58-e579-4e9f-a0b9-3db321a81621" === decoded.aud) {
 		/*
 		* ich kann *beliebige/mehrere* App-Registrations im Portal anlegen. ABER
 		* Es kann aktuell nur *eine* App-Registration fuer ein UserLogin am UCServer eingetragen werden.
@@ -352,14 +358,10 @@ window.addEventListener("load", (_event) => {
 			// iNetLoginIdToken(sToken, sUCSID);
 		}
 	} else {
-		// [Type Assertions](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions)
-		const lblUser = document.getElementById("lblUser") as HTMLSpanElement;
-		lblUser.textContent = anyDecoded.preferred_username;
-		const lblClaimAUD = document.getElementById("lblClaimAUD") as HTMLSpanElement;
 		// [Working with Union Types](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#working-with-union-types)
 		if (Array.isArray(decoded.aud))
-			lblClaimAUD.textContent = decoded.aud[0];
+			updateApplication(anyDecoded.preferred_username, decoded.aud[0]);
 		else if ("string" === typeof decoded.aud)
-			lblClaimAUD.textContent = decoded.aud;
+			updateApplication(anyDecoded.preferred_username, decoded.aud);
 	}
 });

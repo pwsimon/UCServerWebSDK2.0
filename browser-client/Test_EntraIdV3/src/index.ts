@@ -140,6 +140,7 @@ window.addEventListener("load", () => {
 	const btnSignOut = document.getElementById("btnSignOut") as HTMLButtonElement;
 	btnSignOut.addEventListener("click", () => {
 		const tenant = lblTenantId.value;
+		// [Send a sign-out request](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#send-a-sign-out-request)
 		window.location.replace(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/logout`);
 	});
 

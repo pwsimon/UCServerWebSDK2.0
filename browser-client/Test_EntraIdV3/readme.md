@@ -15,6 +15,8 @@ wir Nutzen zwar nur *einen* Account mit dem: <Tenant> werden aber *immer* nach d
 liegt daran das mein estos (Tenant) immer mit aufgelisted wird!
 wenn ich den: account als queryParam (login_hint) beim login mitliefere wird die Wizard-Seite uebersprungen.
 
+wir nutzen den UCServer bzw. die config: `X:\dev\procall_develop\estos\Buildx64\DebugUnicode\config_holamobequ`
+
 einloggen mit: LoginAppSSO (f818731d) => prompt for User/Password (leave page without explizit Logout)
 einloggen mit: PROCALL5283 (164d6c58) => prompt for User *kein* Password/MFA
 
