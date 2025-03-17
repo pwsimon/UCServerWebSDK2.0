@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>NTLM Frame</title>
+	<script src="ntlm-connect.js"></script>
+</head>
+<body>
+	<!--
+		# NTLM Frame (ohne jQuery)
+
+		Das (ohne jQuery) ist in zweifacher hinsicht noetig/wichtig.  
+		a.) ist jQuery deprecated und b.) muesste ich es selber hosten um die CSP konfig zu umgehen.
+
+		Mit der Tatsache das NTLM nur funktioniert wenn die WebSite von unserem UCWeb gehosted wird,  
+		und dadurch `document.location === <UCWeb>` gegeben ist koennen wir eine ZEROR-configuration connect liefern.
+		NTLMFrame.html enthaelt bzw. laed nur ein `<script>`. self execution function oder. onload() handler.
+	-->
+	<p>
+		Der Basis URL ist: http://&lt;UCWeb&gt;:7224/public/html-frame.html bzw. https://&lt;UCWeb&gt;:7225/public/html-frame.html
+	</p>
+</body>
+</html>
